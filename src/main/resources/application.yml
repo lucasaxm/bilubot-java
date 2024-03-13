@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: bilubot
+jasypt:
+  encryptor:
+    password: ${BILUBOT_ENC_PASSWORD}
+telegram:
+  creator:
+    id: ENC(XTQfepj29h3jk+kwHcDfIt/lzvLcvaMpWxLme6VEodP8Rpz26t/g98sXvUC/gtah)
+  bots:
+    hellobot:
+      token: ENC(89TIbpRRB3QHQLyAcENaEX5aWQOknJ1sxQ9HJTPV8Gqm94Nzx9Xmwaq+9O/20rAPU+jOd0B4cuizpC3I52BSeHDyTOucT0IDndBnwkBnnl0=)
+      username: ENC(Pa1hbxoRwMI0WMxiJtA3nf1LBd4yUHTKmH/U/c8qCya6iwsUGCYR3KxIzoiITzw+)
