@@ -4,23 +4,125 @@ on:
   push:
     branches:
       - main
-
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create a new release'
+        required: true
+        default: 'true'
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up JDK 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version-file: '.tool-versions'
           distribution: 'oracle'
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
       - name: Build and test with Gradle
-        run: ./gradlew build
+        run: ./gradlew clean build test
       - name: Generate JAR artifact
         run: ./gradlew bootJar
-      - uses: actions/upload-artifact@v3
+      - name: Rename JAR with commit hash
+        run: mv -v build/libs/bilubot-0.0.1.jar build/libs/bilubot-${{ github.sha }}.jar
+      - name: Upload JAR to run artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: jar-artifact
-          path: build/libs/*.jar
+          name: bilubot-${{ github.sha }}.jar
+          path: build/libs/bilubot-${{ github.sha }}.jar
+          if-no-files-found: error
+          overwrite: true
+  release-and-deploy-to-dev:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bilubot-${{ github.sha }}.jar
+      - name: Release with semantic-release
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.create_release == 'true' }}
+        uses: cycjimmy/semantic-release-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      - name: Check for bilubot-${{ github.sha }}.jar
+        run: |
+          if [ ! -f "bilubot-${{ github.sha }}.jar" ]; then
+            echo "Error: bilubot-${{ github.sha }}.jar not found!"
+            exit 1
+          fi
+      - name: Add server to known_hosts
+        run: ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+      - name: Stop running jar
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            echo "Create the directory if it doesn't exist"
+            mkdir -p /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java
+            ls -lR /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java
+
+            script_pid=$$
+            echo "Script PID: ${script_pid}"
+            # Assume bilubot.jar is run with Java, try to be more specific
+            pids=$(pgrep -f "java.*bilubot.jar" | grep -v "^$script_pid$")
+            
+            # Check if PIDs were found
+            if [ ! -z "$pids" ]; then
+                echo "Found process(es): $pids"
+                # Loop through all PIDs (in case there are multiple)
+                for pid in $pids; do
+                    echo "Checking PID $pid before attempting kill..."
+                    if ps -p $pid > /dev/null; then
+                        echo "Full command of PID $pid:"
+                        ps -o cmd= -p $pid
+                        # Kill the process
+                        kill $pid
+                        if [ $? -eq 0 ]; then
+                            echo "Successfully killed PID $pid."
+                        else
+                            echo "Failed to kill PID $pid."
+                        fi
+                    else
+                        echo "Process $pid no longer exists."
+                    fi
+                done
+            else
+                echo "No matching processes running."
+            fi
+            
+            # Backup the old JAR file
+            mv /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.jar /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot-backup.jar
+      - name: Copy jar to server via scp
+        run: |
+          scp bilubot-${{ github.sha }}.jar ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }}:/home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.jar
+      - name: Start the application
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          BILUBOT_ENC_PASSWORD: ${{ secrets.BILUBOT_ENC_PASSWORD }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: BILUBOT_ENC_PASSWORD
+          script: |
+            ls -lR /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java
+  
+            # Start the new version of the application
+            nohup /home/${{ secrets.SERVER_USERNAME }}/.asdf/installs/java/openjdk-21.0.2/bin/java -Dspring.profiles.active=dev -jar /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.jar > /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.log 2>&1 &
