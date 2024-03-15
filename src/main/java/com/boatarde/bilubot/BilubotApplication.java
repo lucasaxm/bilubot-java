@@ -1,6 +1,6 @@
 package com.boatarde.bilubot;
 
-import com.boatarde.bilubot.abilities.HelloBot;
+import com.boatarde.bilubot.bots.HelloBot;
 import jakarta.annotation.PostConstruct;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
