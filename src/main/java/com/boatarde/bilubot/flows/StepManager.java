@@ -1,6 +1,7 @@
 package com.boatarde.bilubot.flows;
 
 import com.boatarde.bilubot.exception.UnknownActionException;
+import com.boatarde.bilubot.flows.gallerydl.steps.DownloadStep;
 import com.boatarde.bilubot.flows.hello.steps.ReplyHelloWorldStep;
 import org.springframework.stereotype.Component;
 
@@ -13,9 +14,10 @@ public class StepManager {
 
     private final Map<FlowAction, Step> firstStepMap;
 
-    public StepManager(ReplyHelloWorldStep replyHelloWorldStep) {
+    public StepManager(ReplyHelloWorldStep replyHelloWorldStep, DownloadStep downloadStep) {
         this.firstStepMap = new EnumMap<>(FlowAction.class);
         firstStepMap.put(FlowAction.HELLO_WORLD, replyHelloWorldStep);
+        firstStepMap.put(FlowAction.DOWNLOAD, downloadStep);
     }
 
     public Optional<Step> getFirstStep(FlowAction action) throws UnknownActionException {

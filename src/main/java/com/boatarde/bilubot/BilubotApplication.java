@@ -1,14 +1,17 @@
 package com.boatarde.bilubot;
 
 import com.boatarde.bilubot.bots.HelloBot;
+import com.github.lucasaxm.gallerydl.config.GalleryDlAutoConfiguration;
 import jakarta.annotation.PostConstruct;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 @SpringBootApplication
+@ImportAutoConfiguration(GalleryDlAutoConfiguration.class)
 public class BilubotApplication {
 
     private final HelloBot helloBot;
