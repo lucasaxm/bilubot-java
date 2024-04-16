@@ -10,6 +10,15 @@ on:
         description: 'Create a new release'
         required: true
         default: 'true'
+      spring_profile:
+        description: 'Spring profile'
+        required: true
+        default: 'stage'
+        type: choice
+        options:
+          - dev
+          - stage
+          - prod
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -123,6 +132,6 @@ jobs:
           envs: BILUBOT_ENC_PASSWORD
           script: |
             ls -lR /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java
-  
+            
             # Start the new version of the application
-            nohup /home/${{ secrets.SERVER_USERNAME }}/.asdf/installs/java/openjdk-21.0.2/bin/java -Dspring.profiles.active=dev -jar /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.jar > /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.log 2>&1 &
+            nohup /home/${{ secrets.SERVER_USERNAME }}/.asdf/installs/java/openjdk-21.0.2/bin/java -Dspring.profiles.active=${{ github.event.inputs.spring_profile }} -jar /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.jar > /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.log 2>&1 &

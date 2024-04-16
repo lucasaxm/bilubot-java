@@ -1,9 +1,8 @@
 package com.boatarde.bilubot.service;
 
-import com.boatarde.bilubot.exception.UnknownActionException;
-import com.boatarde.bilubot.flows.FlowAction;
-import com.boatarde.bilubot.flows.Step;
-import com.boatarde.bilubot.flows.StepManager;
+import com.boatarde.bilubot.flows.WorkflowAction;
+import com.boatarde.bilubot.flows.WorkflowManager;
+import com.boatarde.bilubot.flows.WorkflowStep;
 import com.boatarde.bilubot.routes.Route;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,7 +25,7 @@ import static org.mockito.Mockito.when;
 class RouterServiceTest {
 
     @Mock
-    private StepManager stepManager;
+    private WorkflowManager workflowManager;
 
     @Mock
     private Update update;
@@ -35,17 +34,17 @@ class RouterServiceTest {
     private TelegramBot bot;
 
     @Test
-    void shouldRouteToOneAction() throws UnknownActionException {
+    void shouldRouteToOneAction() {
         Route route1 = mock(Route.class);
         Route route2 = mock(Route.class);
-        when(route1.test(update, bot)).thenReturn(Optional.of(FlowAction.HELLO_WORLD));
+        when(route1.test(update, bot)).thenReturn(Optional.of(WorkflowAction.BUILD_PONG_MESSAGE));
         when(route2.test(update, bot)).thenReturn(Optional.empty());
 
-        when(stepManager.getFirstStep(FlowAction.HELLO_WORLD)).thenReturn(Optional.empty());
+        when(workflowManager.getStepByEnum(WorkflowAction.BUILD_PONG_MESSAGE)).thenReturn(Optional.empty());
 
-        RouterService routerService = new RouterService(stepManager, List.of(route1, route2));
+        RouterService routerService = new RouterService(workflowManager, List.of(route1, route2));
         routerService.route(update, bot);
-        verify(stepManager).getFirstStep(FlowAction.HELLO_WORLD);
+        verify(workflowManager).getStepByEnum(WorkflowAction.BUILD_PONG_MESSAGE);
     }
 
     @Test
@@ -55,41 +54,42 @@ class RouterServiceTest {
         when(route1.test(update, bot)).thenReturn(Optional.empty());
         when(route2.test(update, bot)).thenReturn(Optional.empty());
 
-        RouterService routerService = new RouterService(stepManager, List.of(route1, route2));
+        RouterService routerService = new RouterService(workflowManager, List.of(route1, route2));
         routerService.route(update, bot);
-        verifyNoInteractions(stepManager);
+        verifyNoInteractions(workflowManager);
     }
 
     @Test
-    void shouldRouteTwoTimes() throws UnknownActionException {
+    void shouldRouteTwoTimes() {
         Route route1 = mock(Route.class);
         Route route2 = mock(Route.class);
-        when(route1.test(update, bot)).thenReturn(Optional.of(FlowAction.HELLO_WORLD));
-        when(route2.test(update, bot)).thenReturn(Optional.of(FlowAction.HELLO_WORLD));
+        when(route1.test(update, bot)).thenReturn(Optional.of(WorkflowAction.BUILD_PONG_MESSAGE));
+        when(route2.test(update, bot)).thenReturn(Optional.of(WorkflowAction.BUILD_PONG_MESSAGE));
 
-        when(stepManager.getFirstStep(FlowAction.HELLO_WORLD)).thenReturn(Optional.empty());
+        when(workflowManager.getStepByEnum(WorkflowAction.BUILD_PONG_MESSAGE)).thenReturn(Optional.empty());
 
-        RouterService routerService = new RouterService(stepManager, List.of(route1, route2));
+        RouterService routerService = new RouterService(workflowManager, List.of(route1, route2));
         routerService.route(update, bot);
-        verify(stepManager, times(2)).getFirstStep(FlowAction.HELLO_WORLD);
+        verify(workflowManager, times(2)).getStepByEnum(WorkflowAction.BUILD_PONG_MESSAGE);
     }
 
     @Test
-    void shouldRouteOneTimeAndExecuteNextStep() throws UnknownActionException {
+    void shouldRouteOneTimeAndExecuteNextStep() {
         Route route1 = mock(Route.class);
         Route route2 = mock(Route.class);
         when(route1.test(update, bot)).thenReturn(Optional.empty());
-        when(route2.test(update, bot)).thenReturn(Optional.of(FlowAction.HELLO_WORLD));
+        when(route2.test(update, bot)).thenReturn(Optional.of(WorkflowAction.BUILD_PONG_MESSAGE));
 
-        Step firstStep = mock(Step.class);
-        Step nextStep = mock(Step.class);
-        when(stepManager.getFirstStep(FlowAction.HELLO_WORLD)).thenReturn(Optional.of(firstStep));
-        when(firstStep.run(any())).thenReturn(Optional.of(nextStep));
-        when(nextStep.run(any())).thenReturn(Optional.empty());
-        RouterService routerService = new RouterService(stepManager, List.of(route1, route2));
+        WorkflowStep firstStep = mock(WorkflowStep.class);
+        WorkflowStep nextStep = mock(WorkflowStep.class);
+        when(workflowManager.getStepByEnum(WorkflowAction.BUILD_PONG_MESSAGE)).thenReturn(Optional.of(firstStep));
+        when(firstStep.run(any())).thenReturn(WorkflowAction.SEND_MESSAGE);
+        when(workflowManager.getStepByEnum(WorkflowAction.SEND_MESSAGE)).thenReturn(Optional.of(nextStep));
+        RouterService routerService = new RouterService(workflowManager, List.of(route1, route2));
         routerService.route(update, bot);
 
-        verify(stepManager).getFirstStep(FlowAction.HELLO_WORLD);
+        verify(workflowManager).getStepByEnum(WorkflowAction.BUILD_PONG_MESSAGE);
+        verify(workflowManager).getStepByEnum(WorkflowAction.SEND_MESSAGE);
         verify(firstStep).run(any());
         verify(nextStep).run(any());
     }

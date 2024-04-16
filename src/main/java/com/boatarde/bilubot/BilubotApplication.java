@@ -1,23 +1,20 @@
 package com.boatarde.bilubot;
 
-import com.boatarde.bilubot.bots.HelloBot;
-import com.github.lucasaxm.gallerydl.config.GalleryDlAutoConfiguration;
+import com.boatarde.bilubot.bots.BiluBot;
 import jakarta.annotation.PostConstruct;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 @SpringBootApplication
-@ImportAutoConfiguration(GalleryDlAutoConfiguration.class)
 public class BilubotApplication {
 
-    private final HelloBot helloBot;
+    private final BiluBot biluBot;
 
-    public BilubotApplication(HelloBot helloBot) {
-        this.helloBot = helloBot;
+    public BilubotApplication(BiluBot biluBot) {
+        this.biluBot = biluBot;
     }
 
     public static void main(String[] args) {
@@ -31,7 +28,7 @@ public class BilubotApplication {
             TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
 
             // Register your newly created AbilityBot
-            botsApi.registerBot(helloBot);
+            botsApi.registerBot(biluBot);
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
