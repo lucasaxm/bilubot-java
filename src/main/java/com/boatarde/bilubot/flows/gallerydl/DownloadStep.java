@@ -5,6 +5,7 @@ import com.boatarde.bilubot.flows.WorkflowDataBag;
 import com.boatarde.bilubot.flows.WorkflowDataKey;
 import com.boatarde.bilubot.flows.WorkflowStep;
 import com.boatarde.bilubot.flows.WorkflowStepRegistration;
+import com.boatarde.bilubot.models.gallerydl.GalleryDlProperties;
 import com.github.lucasaxm.gallerydl.GalleryDl;
 import com.github.lucasaxm.gallerydl.exception.GalleryDlException;
 import com.github.lucasaxm.gallerydl.options.GalleryDlOptions;
@@ -21,9 +22,11 @@ import java.util.List;
 public class DownloadStep implements WorkflowStep {
 
     private final GalleryDl galleryDl;
+    private final GalleryDlProperties galleryDlProperties;
 
-    public DownloadStep(GalleryDl galleryDl) {
+    public DownloadStep(GalleryDl galleryDl, GalleryDlProperties galleryDlProperties) {
         this.galleryDl = galleryDl;
+        this.galleryDlProperties = galleryDlProperties;
     }
 
     @Override
@@ -35,6 +38,8 @@ public class DownloadStep implements WorkflowStep {
                 .filter(entity -> EntityType.URL.equalsIgnoreCase(entity.getType()))
                 .map(MessageEntity::getText)
                 .map(url -> galleryDl.download(url, GalleryDlOptions.builder()
+                    .config(galleryDlProperties.getConfigPath())
+                    .configIgnore(true)
                     .verbose(true)
                     .build())
                 ).toList();
