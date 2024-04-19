@@ -17,7 +17,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class SendMessageWorkflowStepTest {
+class SendMessageStepTest {
     @Mock
     private BiluBot biluBot;
 

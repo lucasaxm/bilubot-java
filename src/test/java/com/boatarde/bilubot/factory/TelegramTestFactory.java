@@ -7,6 +7,7 @@ import org.telegram.telegrambots.meta.api.objects.MessageEntity;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 public class TelegramTestFactory {
@@ -59,6 +60,43 @@ public class TelegramTestFactory {
             .length(command.length())
             .text(command)
             .build()));
+
+        return message;
+    }
+
+    public static Update buildUrlTextMessageUpdate(List<String> urls) {
+        Message message = buildUrlTextMessage(urls);
+
+        Update update = new Update();
+        update.setMessage(message);
+
+        return update;
+    }
+
+    public static Message buildUrlTextMessage(List<String> urls) {
+        Chat chat = buildChat();
+
+        Message message = new Message();
+        message.setChat(chat);
+        message.setText(String.join("\n", urls));
+        message.setMessageId(MESSAGE_ID);
+        message.setDate((int) (Instant.now().getEpochSecond()));
+        message.setEntities(new ArrayList<>());
+        urls.forEach(currentUrl -> {
+            int offset;
+            List<MessageEntity> entities = message.getEntities();
+            if (entities.isEmpty()) {
+                offset = 0;
+            } else {
+                MessageEntity last = entities.getLast();
+                offset = last.getOffset() + last.getText().length() + entities.size();
+            }
+            entities.add(MessageEntity.builder()
+                .type(EntityType.URL)
+                .offset(offset)
+                .length(currentUrl.length())
+                .build());
+        });
 
         return message;
     }

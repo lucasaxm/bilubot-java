@@ -46,7 +46,7 @@ public class DownloadStep implements WorkflowStep {
             bag.put(WorkflowDataKey.GALLERY_DL_RESULTS, results);
         } catch (GalleryDlException e) {
             log.error(String.format("Gallery-dl error message: %s.\nGallery-dl result: %s)", e.getMessage(),
-                e.getGalleryDlResult().toString()), e);
+                e.getGalleryDlResult()), e);
             return WorkflowAction.NONE;
         }
         return WorkflowAction.GET_NEXT_GALLERY_DL_RESULT;

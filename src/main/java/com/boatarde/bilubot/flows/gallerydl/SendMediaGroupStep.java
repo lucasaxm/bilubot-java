@@ -43,7 +43,7 @@ public class SendMediaGroupStep implements WorkflowStep {
             }
             log.info("Response: {}", TelegramUtils.toJson(response));
         } catch (TelegramApiException e) {
-            e.printStackTrace();
+            log.error(String.format("TelegramApiException when sending media: %s", e.getMessage()), e);
             return WorkflowAction.NONE;
         }
 

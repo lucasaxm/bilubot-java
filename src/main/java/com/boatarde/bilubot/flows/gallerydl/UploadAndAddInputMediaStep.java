@@ -8,6 +8,7 @@ import com.boatarde.bilubot.flows.WorkflowStep;
 import com.boatarde.bilubot.flows.WorkflowStepRegistration;
 import com.boatarde.bilubot.util.InputMediaType;
 import com.github.lucasaxm.gallerydl.metadata.Metadata;
+import lombok.extern.slf4j.Slf4j;
 import net.bramp.ffmpeg.FFprobe;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import net.bramp.ffmpeg.probe.FFmpegStream;
@@ -29,15 +30,16 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.io.File;
 import java.io.IOException;
 
+@Slf4j
 @WorkflowStepRegistration(WorkflowAction.UPLOAD_AND_ADD_INPUT_MEDIA)
-public class UploadAndAddInputMedia implements WorkflowStep {
+public class UploadAndAddInputMediaStep implements WorkflowStep {
 
     private final FFprobe ffprobe;
     private final Tika tika;
     private final String uploadChannelId;
 
-    public UploadAndAddInputMedia(@Value("${ffprobe.path}") String ffprobePath,
-                                  @Value("${telegram.bots.bilubot.upload-channel-id}") String uploadChannelId)
+    public UploadAndAddInputMediaStep(@Value("${ffprobe.path}") String ffprobePath,
+                                      @Value("${telegram.bots.bilubot.upload-channel-id}") String uploadChannelId)
         throws IOException {
         this.ffprobe = new FFprobe(ffprobePath);
         this.uploadChannelId = uploadChannelId;
@@ -60,7 +62,7 @@ public class UploadAndAddInputMedia implements WorkflowStep {
                         .photo(new InputFile(new File(metadata.getLocalPath())))
                         .build());
                     sendMediaGroup.getMedias().add(InputMediaPhoto.builder()
-                        .media(response.getPhoto().get(response.getPhoto().size() - 1).getFileId())
+                        .media(response.getPhoto().getLast().getFileId())
                         .build());
                 }
                 case VIDEO, ANIMATION -> {
@@ -88,12 +90,12 @@ public class UploadAndAddInputMedia implements WorkflowStep {
                         .document(new InputFile(new File(metadata.getLocalPath())))
                         .build());
                     sendMediaGroup.getMedias().add(InputMediaDocument.builder()
-                        .media(response.getAudio().getFileId())
+                        .media(response.getDocument().getFileId())
                         .build());
                 }
             }
         } catch (IOException | TelegramApiException e) {
-            e.printStackTrace();
+            log.error(String.format("Error when uploading media: %s", e.getMessage()), e);
             return WorkflowAction.NONE;
         }
 
