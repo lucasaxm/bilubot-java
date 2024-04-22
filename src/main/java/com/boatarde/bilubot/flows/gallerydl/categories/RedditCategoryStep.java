@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.meta.api.methods.send.SendMediaGroup;
 import org.telegram.telegrambots.meta.api.objects.media.InputMedia;
 
+import java.util.Optional;
+
 @Slf4j
 @WorkflowStepRegistration(WorkflowAction.REDDIT_CATEGORY)
 public class RedditCategoryStep implements WorkflowStep {
@@ -26,7 +28,7 @@ public class RedditCategoryStep implements WorkflowStep {
             lastMedia.setCaption(String.format("%s(%s)\n%s",
                 submission.getAuthor(),
                 submission.getSubreddit(),
-                submission.getSelftext()));
+                Optional.ofNullable(submission.getSelftext()).orElse("")));
         }
 
         log.info("Updated media index {} with caption: {}", lastMediaIndex, lastMedia.getCaption());

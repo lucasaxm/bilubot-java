@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.meta.api.methods.send.SendMediaGroup;
 import org.telegram.telegrambots.meta.api.objects.media.InputMedia;
 
+import java.util.Optional;
+
 @Slf4j
 @WorkflowStepRegistration(WorkflowAction.GENERIC_CATEGORY)
 public class GenericCategoryStep implements WorkflowStep {
@@ -21,7 +23,8 @@ public class GenericCategoryStep implements WorkflowStep {
         int lastMediaIndex = sendMediaGroup.getMedias().size() - 1;
         InputMedia lastMedia = sendMediaGroup.getMedias().get(lastMediaIndex);
 
-        lastMedia.setCaption(String.format("%s(%s)", metadata.getCategory(), metadata.getSubcategory()));
+        lastMedia.setCaption(Optional.ofNullable(metadata.getSubcategory())
+            .orElse(metadata.getCategory()));
 
         log.info("Updated media index {} with caption: {}", lastMediaIndex, lastMedia.getCaption());
         return WorkflowAction.SEND_MEDIA_GROUP;
