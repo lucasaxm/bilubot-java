@@ -1,6 +1,6 @@
 package com.boatarde.bilubot.configuration;
 
-import com.boatarde.bilubot.bots.HelloBot;
+import com.boatarde.bilubot.bots.BiluBot;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Component;
@@ -11,9 +11,9 @@ import java.util.Optional;
 @Component
 public class TelegramBotHealthIndicator implements HealthIndicator {
 
-    private final HelloBot bot;
+    private final BiluBot bot;
 
-    public TelegramBotHealthIndicator(HelloBot bot) {
+    public TelegramBotHealthIndicator(BiluBot bot) {
         this.bot = bot;
     }
 

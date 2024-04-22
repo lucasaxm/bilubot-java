@@ -9,14 +9,14 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 
 @Component
 @Slf4j
-public class HelloBot extends TelegramLongPollingBot {
+public class BiluBot extends TelegramLongPollingBot {
 
     private final String username;
     private final RouterService routerService;
 
-    public HelloBot(@Value("${telegram.bots.hellobot.token}") String token,
-                    @Value("${telegram.bots.hellobot.username}") String username,
-                    RouterService routerService) {
+    public BiluBot(@Value("${telegram.bots.bilubot.token}") String token,
+                   @Value("${telegram.bots.bilubot.username}") String username,
+                   RouterService routerService) {
         super(token);
         this.username = username;
         this.routerService = routerService;
