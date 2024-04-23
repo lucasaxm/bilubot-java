@@ -10,15 +10,12 @@ on:
         description: 'Create a new release'
         required: true
         default: 'true'
-      spring_profile:
-        description: 'Spring profile'
+      environment:
+        description: 'Environment to deploy to'
+        type: environment
+        default: stage
         required: true
-        default: 'stage'
-        type: choice
-        options:
-          - dev
-          - stage
-          - prod
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -54,6 +51,8 @@ jobs:
   release-and-deploy-to-dev:
     needs: build-and-test
     runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v4
       - uses: webfactory/ssh-agent@v0.9.0
@@ -129,9 +128,9 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: BILUBOT_ENC_PASSWORD
+          envs: BILUBOT_ENC_PASSWORD,FFPROBE_BINARY_PATH,GALLERYDL_BINARY_PATH,GALLERYDL_CONFIG_PATH
           script: |
             ls -lR /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java
             
             # Start the new version of the application
-            nohup /home/${{ secrets.SERVER_USERNAME }}/.asdf/installs/java/openjdk-21.0.2/bin/java -Dspring.profiles.active=${{ github.event.inputs.spring_profile }} -jar /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.jar > /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.log 2>&1 &
+            nohup /home/${{ secrets.SERVER_USERNAME }}/.asdf/installs/java/openjdk-21.0.2/bin/java -Dspring.profiles.active=${{ inputs.environment }} -jar /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.jar > /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.log 2>&1 &
