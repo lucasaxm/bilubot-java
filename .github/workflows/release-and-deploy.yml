@@ -1,4 +1,4 @@
-name: CI
+name: Release and deploy
 
 on:
   push:
@@ -49,7 +49,7 @@ jobs:
           path: build/libs/bilubot-${{ github.sha }}.jar
           if-no-files-found: error
           overwrite: true
-  release-and-deploy-to-dev:
+  release-and-deploy:
     needs: build-and-test
     runs-on: ubuntu-latest
     environment:
@@ -128,16 +128,17 @@ jobs:
           FFPROBE_BINARY_PATH: ${{ secrets.FFPROBE_BINARY_PATH }}
           GALLERYDL_BINARY_PATH: ${{ secrets.GALLERYDL_BINARY_PATH }}
           GALLERYDL_CONFIG_PATH: ${{ secrets.GALLERYDL_CONFIG_PATH }}
+          SPRING_PROFILES_ACTIVE: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'stage' }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: BILUBOT_ENC_PASSWORD,FFPROBE_BINARY_PATH,GALLERYDL_BINARY_PATH,GALLERYDL_CONFIG_PATH
+          envs: BILUBOT_ENC_PASSWORD,FFPROBE_BINARY_PATH,GALLERYDL_BINARY_PATH,GALLERYDL_CONFIG_PATH,SPRING_PROFILES_ACTIVE
           script: |
             ls -lhrt /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java
             
             # Start the new version of the application
-            nohup /home/${{ secrets.SERVER_USERNAME }}/.asdf/installs/java/openjdk-21.0.2/bin/java -Dspring.profiles.active=${{ github.event.inputs.environment }} -jar /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.jar > /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.log 2>&1 &
+            nohup /home/${{ secrets.SERVER_USERNAME }}/.asdf/installs/java/openjdk-21.0.2/bin/java -Dspring.profiles.active=$SPRING_PROFILES_ACTIVE -jar /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.jar > /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.log 2>&1 &
       - name: Check application startup
         uses: appleboy/ssh-action@v1.0.3
         with:
