@@ -8,8 +8,9 @@ on:
     inputs:
       create_release:
         description: 'Create a new release'
+        type: boolean
         required: true
-        default: 'true'
+        default: false
       environment:
         description: 'Environment to deploy to'
         type: environment
@@ -52,7 +53,7 @@ jobs:
     needs: build-and-test
     runs-on: ubuntu-latest
     environment:
-      name: ${{ github.event.inputs.environment }}
+      name: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'stage' }}
     steps:
       - uses: actions/checkout@v4
       - uses: webfactory/ssh-agent@v0.9.0
@@ -63,7 +64,7 @@ jobs:
         with:
           name: bilubot-${{ github.sha }}.jar
       - name: Release with semantic-release
-        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.create_release == 'true' }}
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.create_release }}
         uses: cycjimmy/semantic-release-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
