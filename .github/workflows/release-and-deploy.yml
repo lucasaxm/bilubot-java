@@ -1,4 +1,4 @@
-name: CI
+name: Release and deploy
 
 on:
   push:
@@ -8,17 +8,15 @@ on:
     inputs:
       create_release:
         description: 'Create a new release'
+        type: boolean
         required: true
-        default: 'true'
-      spring_profile:
-        description: 'Spring profile'
+        default: false
+      environment:
+        description: 'Environment to deploy to'
+        type: environment
+        default: stage
         required: true
-        default: 'stage'
-        type: choice
-        options:
-          - dev
-          - stage
-          - prod
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -51,9 +49,11 @@ jobs:
           path: build/libs/bilubot-${{ github.sha }}.jar
           if-no-files-found: error
           overwrite: true
-  release-and-deploy-to-dev:
+  release-and-deploy:
     needs: build-and-test
     runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'stage' }}
     steps:
       - uses: actions/checkout@v4
       - uses: webfactory/ssh-agent@v0.9.0
@@ -64,7 +64,7 @@ jobs:
         with:
           name: bilubot-${{ github.sha }}.jar
       - name: Release with semantic-release
-        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.create_release == 'true' }}
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.create_release }}
         uses: cycjimmy/semantic-release-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -125,13 +125,38 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           BILUBOT_ENC_PASSWORD: ${{ secrets.BILUBOT_ENC_PASSWORD }}
+          FFPROBE_BINARY_PATH: ${{ secrets.FFPROBE_BINARY_PATH }}
+          GALLERYDL_BINARY_PATH: ${{ secrets.GALLERYDL_BINARY_PATH }}
+          GALLERYDL_CONFIG_PATH: ${{ secrets.GALLERYDL_CONFIG_PATH }}
+          SPRING_PROFILES_ACTIVE: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'stage' }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: BILUBOT_ENC_PASSWORD
+          envs: BILUBOT_ENC_PASSWORD,FFPROBE_BINARY_PATH,GALLERYDL_BINARY_PATH,GALLERYDL_CONFIG_PATH,SPRING_PROFILES_ACTIVE
           script: |
-            ls -lR /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java
+            ls -lhrt /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java
             
             # Start the new version of the application
-            nohup /home/${{ secrets.SERVER_USERNAME }}/.asdf/installs/java/openjdk-21.0.2/bin/java -Dspring.profiles.active=${{ github.event.inputs.spring_profile }} -jar /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.jar > /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.log 2>&1 &
+            nohup /home/${{ secrets.SERVER_USERNAME }}/.asdf/installs/java/openjdk-21.0.2/bin/java -Dspring.profiles.active=$SPRING_PROFILES_ACTIVE -jar /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.jar > /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.log 2>&1 &
+      - name: Check application startup
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            # Wait for 1 minute for the application to start
+            for i in {1..60}; do
+              if grep -q "Started BilubotApplication" /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.log; then
+                echo "Application started successfully"
+                exit 0
+              elif grep -q "Application run failed" /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.log; then
+                echo "Application failed to start"
+                cat /home/${{ secrets.SERVER_USERNAME }}/bots/bilubot-java/bilubot.log
+                exit 1
+              fi
+              sleep 1
+            done
+            echo "Application did not start within 1 minute"
+            exit 1
