@@ -52,28 +52,6 @@ class SendMediaGroupStepTest {
     }
 
     @Test
-    void testSendMediaGroup() throws TelegramApiException {
-        WorkflowDataBag bag = new WorkflowDataBag();
-        bag.put(WorkflowDataKey.BILUBOT, biluBot);
-        bag.put(WorkflowDataKey.GALLERY_DL_CURRENT_RESULT_METADATA_ITERATOR, List.of().listIterator());
-        SendMediaGroup sendMediaGroup = SendMediaGroup.builder()
-            .chatId("1234")
-            .medias(List.of(InputMediaPhoto.builder()
-                .media("fileId1")
-                .build(), InputMediaPhoto.builder()
-                .media("fileId2")
-                .build()))
-            .build();
-        bag.put(WorkflowDataKey.SEND_MEDIA_GROUP, sendMediaGroup);
-
-        WorkflowAction nextStep = step.run(bag);
-
-        assertEquals(WorkflowAction.GET_NEXT_GALLERY_DL_METADATA, nextStep);
-        assertNull(bag.get(WorkflowDataKey.SEND_MEDIA_GROUP, SendMediaGroup.class));
-        verify(biluBot).execute(sendMediaGroup);
-    }
-
-    @Test
     void testSendSingleMedia() {
         WorkflowDataBag bag = new WorkflowDataBag();
         bag.put(WorkflowDataKey.BILUBOT, biluBot);
@@ -131,6 +109,29 @@ class SendMediaGroupStepTest {
         SendMediaGroup sendMediaGroup = SendMediaGroup.builder()
             .chatId("1234")
             .medias(inputMedia)
+            .build();
+        bag.put(WorkflowDataKey.SEND_MEDIA_GROUP, sendMediaGroup);
+
+        WorkflowAction nextStep = step.run(bag);
+
+        assertEquals(WorkflowAction.GET_NEXT_GALLERY_DL_METADATA, nextStep);
+        assertNull(bag.get(WorkflowDataKey.SEND_MEDIA_GROUP, SendMediaGroup.class));
+        verify(biluBot).execute(sendMediaGroup);
+    }
+
+
+    @Test
+    void testHasNoMoreData() throws TelegramApiException {
+        WorkflowDataBag bag = new WorkflowDataBag();
+        bag.put(WorkflowDataKey.BILUBOT, biluBot);
+        bag.put(WorkflowDataKey.GALLERY_DL_CURRENT_RESULT_METADATA_ITERATOR, List.of().listIterator());
+        SendMediaGroup sendMediaGroup = SendMediaGroup.builder()
+            .chatId("1234")
+            .medias(List.of(InputMediaPhoto.builder()
+                .media("fileId1")
+                .build(), InputMediaPhoto.builder()
+                .media("fileId2")
+                .build()))
             .build();
         bag.put(WorkflowDataKey.SEND_MEDIA_GROUP, sendMediaGroup);
 
