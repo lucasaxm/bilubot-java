@@ -39,6 +39,7 @@ public class SendMediaGroupStep implements WorkflowStep {
                 SendMediaBotMethod<Message> media = TelegramUtils.inputMediaToSendMedia(sendMediaGroup, 0);
                 response = List.of(TelegramUtils.executeSendMediaBotMethod(biluBot, media));
             } else {
+                TelegramUtils.normalizeMediaGroupCaption(sendMediaGroup);
                 response = biluBot.execute(sendMediaGroup);
             }
             log.info("Response: {}", TelegramUtils.toJson(response));

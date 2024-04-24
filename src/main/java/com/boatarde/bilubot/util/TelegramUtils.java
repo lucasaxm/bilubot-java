@@ -22,6 +22,7 @@ import org.telegram.telegrambots.meta.api.objects.media.InputMediaVideo;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Optional;
 
 @UtilityClass
@@ -179,5 +180,14 @@ public class TelegramUtils {
 
     public static String toJson(Object o) {
         return toJson(o, false);
+    }
+
+    public static void normalizeMediaGroupCaption(SendMediaGroup sendMediaGroup) {
+        if (sendMediaGroup.getMedias().stream()
+            .allMatch(inputMedia -> Objects.equals(inputMedia.getCaption(),
+                sendMediaGroup.getMedias().getFirst().getCaption()))) {
+            sendMediaGroup.getMedias().subList(1, sendMediaGroup.getMedias().size())
+                .forEach(inputMedia -> inputMedia.setCaption(null));
+        }
     }
 }
