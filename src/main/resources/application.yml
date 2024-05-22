@@ -1,6 +1,14 @@
 spring:
   application:
     name: bilubot
+management:
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health
 jasypt:
   encryptor:
     password: ${BILUBOT_ENC_PASSWORD}
